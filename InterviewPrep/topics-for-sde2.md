@@ -1,0 +1,7 @@
+JAVA Core + DSA
+SQL
+NoSQL
+RestAPIs
+LLD
+HLD
+AI-agents
