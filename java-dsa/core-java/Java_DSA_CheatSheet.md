@@ -385,10 +385,17 @@ String trimmed = withSpaces.trim();       // "Hello World"
 String stripped = "  Hello  ".strip();    // "Hello" (Java 11+)
 
 // Replacing
-String replaced = str.replace('a', 'A');  // "JAvA Programming"
+String replaced = str.replace('a', 'A');  // "JAvA ProgrAmming" (replaces ALL occurrences)
 String replaced2 = str.replace("Programming", "Development"); // "Java Development"
 String replaced3 = str.replaceAll("a", "A"); // "JAvA ProgrAmming"
 String replaced4 = str.replaceFirst("a", "A"); // "JAva Programming"
+
+// Note: replace() vs replaceAll() vs replaceFirst()
+// - replace(char/CharSequence): Replaces ALL occurrences (literal match, NOT regex)
+// - replaceAll(String regex): Replaces ALL occurrences (uses regex pattern)
+// - replaceFirst(String regex): Replaces ONLY the first occurrence (uses regex pattern)
+// Example: "a1b2c3".replace("\\d", "X") treats "\\d" as literal text
+//          "a1b2c3".replaceAll("\\d", "X") treats "\\d" as regex (matches digits) -> "aXbXcX"
 
 // Checking prefix/suffix
 boolean starts = str.startsWith("Java");  // true
