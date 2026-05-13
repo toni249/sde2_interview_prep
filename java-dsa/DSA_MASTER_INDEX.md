@@ -35,6 +35,7 @@ For every pattern, ask yourself:
 | 10| **Heaps / Priority Queue** | ✅ Done | [heaps/10_heap_patterns.md](heaps/10_heap_patterns.md) |
 | 11| **Tries**           | ✅ Done | [tries/11_trie_patterns.md](tries/11_trie_patterns.md) |
 | 12| **Segment Tree / BIT** | ✅ Done | [advanced/12_segment_tree_bit.md](advanced/12_segment_tree_bit.md) |
+| 13| **Misc Algorithms**    | ✅ Done | [misc/00_misc_index.md](misc/00_misc_index.md) |
 
 ---
 
