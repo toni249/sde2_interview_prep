@@ -64,7 +64,7 @@ So we need `prefix[i] = prefix[j] - k`. Count how many such `prefix[i]` exist us
 // Count subarrays with sum = k
 int countSubarrays(int[] A, int k) {
     Map<Integer, Integer> freq = new HashMap<>();
-    freq.put(0, 1);   // empty prefix has sum 0
+    freq.put(0, 1);   // one way to have prefix sum 0 before processing any element
     int running = 0, count = 0;
     for (int x : A) {
         running += x;
@@ -73,6 +73,51 @@ int countSubarrays(int[] A, int k) {
     }
     return count;
 }
+```
+
+`freq.put(0, 1)` does not mean the empty prefix has value `1`.
+It means prefix sum `0` has been seen once already: the empty prefix before the array starts.
+This is what allows subarrays that begin at index `0` to be counted correctly.
+
+### Example: Longest Subarray with Sum K
+
+Use prefix sum + hashmap when the array can contain **negative numbers**.
+
+Key idea: if current prefix is `running`, we need an earlier prefix `running - k`.
+To maximize length, store the **first index** where each prefix sum appeared.
+
+```java
+int longestSubarrayWithSumK(int[] A, int k) {
+    Map<Integer, Integer> firstIndex = new HashMap<>();
+    firstIndex.put(0, -1); // prefix sum before the array starts
+
+    int running = 0, maxLen = 0;
+    for (int i = 0; i < A.length; i++) {
+        running += A[i];
+
+        if (firstIndex.containsKey(running - k)) {
+            int start = firstIndex.get(running - k);
+            maxLen = Math.max(maxLen, i - start);
+        }
+
+        // Keep earliest index only, because earliest gives longest length.
+        firstIndex.putIfAbsent(running, i);
+    }
+    return maxLen;
+}
+```
+
+Trace:
+```
+A = [10, 5, 2, 7, 1, 9], k = 15
+
+i  A[i]  running  need(running-k)  longest
+0  10    10       -5               0
+1   5    15        0               2   -> [10, 5]
+2   2    17        2               2
+3   7    24        9               2
+4   1    25       10               4   -> [5, 2, 7, 1]
+5   9    34       19               4
 ```
 
 ### Questions — Easy → Hard
@@ -253,21 +298,87 @@ for (int right = 0; right < n; right++) {
 - Key constraint: elements are **non-negative** for simple shrinking (else use prefix + hashmap)
 
 ### Tricky Case: Negative Numbers
-If array has negatives, variable window won't work with simple shrinking.
-→ Switch to **prefix sum + hashmap**.
+If the array can contain negative numbers, the usual sliding window rule breaks.
+
+Why:
+- Sliding window works when expanding the right end only makes the condition "worse" in a predictable way.
+- With negative numbers, adding a new element can increase or decrease the sum.
+- So shrinking from the left is no longer guaranteed to move you toward the answer.
+
+Example:
+```text
+A = [2, -1, 2], target = 3
+```
+If you expand:
+- `[2]` sum = 2
+- `[2, -1]` sum = 1
+- `[2, -1, 2]` sum = 3
+
+The window does not change monotonically, so a simple "expand until invalid, then shrink" rule is not reliable.
+
+For these cases, use:
+- **prefix sum + hashmap** for sum-based problems
+- or another approach that does not depend on monotonic window movement
 
 ### Important Variations
 
 **At Most K Distinct** → `atMost(k) - atMost(k-1)`
+
+This is a counting trick.
+
+`atMost(k)` = number of subarrays that contain **at most k distinct values**.
+
+Then:
+- subarrays with **exactly k distinct values**
+- = subarrays with at most `k`
+- minus subarrays with at most `k - 1`
+
+Reason:
+- `atMost(k)` includes all subarrays with 0, 1, 2, ... `k` distinct values
+- `atMost(k - 1)` includes all subarrays with 0, 1, 2, ... `k - 1` distinct values
+- subtracting removes everything except the ones with exactly `k`
+
+Example:
+```text
+nums = [1, 2, 1, 2, 3], k = 2
 ```
-"exactly k distinct" problems are solved as: f(k) = atMost(k) - atMost(k-1)
-```
+Subarrays with exactly 2 distinct values are counted as:
+- `atMost(2)` - `atMost(1)`
+
+This pattern is used in problems like:
+- `Subarrays with K Different Integers`
+- `Fruit Into Baskets`
 
 **Minimum Window Substring** (Classic Hard)
 ```java
 // Two frequency maps: need[] and have[]
 // Shrink from left once window is valid
 ```
+
+Meaning:
+- `need[]` tells how many of each character the target string requires
+- `have[]` tells how many of each character are currently inside the window
+- when the window has all required characters in enough quantity, the window is "valid"
+
+Then:
+- expand `right` until the window becomes valid
+- once valid, try to shrink `left` to make the window as small as possible
+
+Example:
+```text
+s = "ADOBECODEBANC", t = "ABC"
+```
+The window becomes valid when it contains at least:
+- one `A`
+- one `B`
+- one `C`
+
+Then you shrink from the left to remove extra characters while keeping the window valid.
+
+This is different from the "sum" window:
+- here we are not checking numeric sum
+- we are checking whether the window contains enough characters
+- so frequency maps are the right tool
 
 ### Questions — Easy → Hard
 

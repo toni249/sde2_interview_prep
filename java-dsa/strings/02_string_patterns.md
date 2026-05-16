@@ -382,6 +382,17 @@ int calculate(String s) {
 Naive: O(n × m). KMP: O(n + m).
 
 ### The LPS Array (failure function)
+LPS = `Longest Proper Prefix which is also Suffix`.
+
+For every index `i` in the pattern:
+- look at `pattern[0..i]`
+- find the longest prefix that is also a suffix
+- store its length in `lps[i]`
+
+Important:
+- "proper prefix" means the whole string itself does **not** count
+- LPS tells us how much of the pattern we can reuse after a mismatch
+
 ```
 pattern = "ababc"
 lps     = [0, 0, 1, 2, 0]
@@ -389,6 +400,24 @@ lps     = [0, 0, 1, 2, 0]
 lps[i] = length of longest proper prefix of pattern[0..i]
          that is also a suffix.
 ```
+
+Example breakdown:
+```text
+pattern = a b a b c
+index      0 1 2 3 4
+
+i = 0 -> "a"      -> no proper prefix/suffix -> 0
+i = 1 -> "ab"     -> no match               -> 0
+i = 2 -> "aba"    -> "a" is both prefix and suffix -> 1
+i = 3 -> "abab"   -> "ab" is both prefix and suffix -> 2
+i = 4 -> "ababc"  -> no match               -> 0
+```
+
+Why this helps:
+- suppose we matched `pattern[0..j-1]`
+- then a mismatch happens at `pattern[j]`
+- instead of starting from scratch, we jump to `lps[j-1]`
+- that means we keep the part that is still guaranteed to match
 
 ### Building LPS
 ```java
@@ -407,6 +436,28 @@ int[] buildLPS(String pattern) {
     }
     return lps;
 }
+```
+
+How the builder works:
+- `len` = current length of matched prefix
+- `i` = index we are computing
+- if `pattern[i] == pattern[len]`, we extend the match
+- if not, we do not restart from `0` immediately
+- instead, we fall back to `lps[len - 1]`
+
+This fallback is the whole KMP trick.
+
+Example build trace for `ababc`:
+```text
+pattern: a b a b c
+index:   0 1 2 3 4
+lps:     0 0 1 2 0
+
+i=1, len=0: b != a -> lps[1]=0
+i=2, len=0: a == a -> lps[2]=1, len=1
+i=3, len=1: b == b -> lps[3]=2, len=2
+i=4, len=2: c != a -> fallback len = lps[1] = 0
+            c != a -> lps[4]=0
 ```
 
 ### KMP Search
@@ -431,6 +482,26 @@ List<Integer> kmpSearch(String text, String pattern) {
     return result;
 }
 ```
+
+Search intuition:
+- `i` walks through the text
+- `j` walks through the pattern
+- if characters match, move both forward
+- if they mismatch and `j > 0`, use `lps[j - 1]` to move `j` back
+- `i` does not move backward, so each text character is processed at most once
+
+Mini example:
+```text
+text    = abxabcabcaby
+pattern = abcaby
+```
+Suppose we matched `abca` and then got a mismatch.
+Instead of comparing from pattern start again, KMP asks:
+- what is the longest prefix of `abc a` that is also a suffix?
+- answer comes from `lps`
+- jump `j` to that shorter valid prefix and continue
+
+That is why KMP avoids repeated comparisons.
 
 ### FAANG Use Cases for KMP
 1. "Find all occurrences of pattern in text"

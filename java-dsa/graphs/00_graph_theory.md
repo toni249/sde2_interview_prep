@@ -529,6 +529,56 @@ Arrays.sort(edges, (a, b) -> a[2] - b[2]);  // sort by weight for Kruskal
 
 ---
 
+## 5.5 Graph Algorithm Intuition
+
+This is the revision layer: the basic idea behind the common graph algorithms.
+
+### BFS
+- Think: "visit nodes in waves"
+- Why it works for shortest path in unweighted graphs: every edge costs the same, so the first time you reach a node is the shortest hop count
+- Uses a queue, so nodes discovered earlier are processed earlier
+
+### DFS
+- Think: "go as deep as possible, then backtrack"
+- Why it is useful: it naturally exposes parent-child relationships, recursion stack, and component structure
+- Good for cycle detection, topological sort, SCC, and problems that need exhaustive exploration
+
+### Undirected Cycle Detection
+- Use DFS with a `parent`
+- If you reach a visited node that is not the parent, you found a cycle
+- Why: in an undirected graph, every edge appears in both directions, so the parent edge must be ignored
+
+### Directed Cycle Detection
+- Use DFS colors: `WHITE`, `GRAY`, `BLACK`
+- `GRAY` means "this node is still in the current recursion stack"
+- If you see a `GRAY` node again, that is a back edge, which proves a cycle
+
+### Topological Sort
+- Only possible on a DAG
+- Idea: place nodes so every edge `u -> v` keeps `u` before `v`
+- Kahn's algorithm starts from nodes with in-degree `0`
+- DFS-based topo sort pushes a node after all of its outgoing neighbors are processed
+
+### Shortest Path
+- Unweighted graph: BFS
+- Weighted graph with non-negative weights: Dijkstra
+- Weighted graph with possible negative weights: Bellman-Ford
+- Reason: shortest path choice depends on whether edge weights can change the "best next step"
+
+### MST
+- Goal: connect all nodes with minimum total cost
+- Think: choose the cheapest edges that do not create a cycle
+- Kruskal sorts edges first, then uses DSU to avoid cycles
+- Prim grows one connected tree outward using the cheapest available frontier edge
+
+### DSU
+- Think: maintain groups of connected nodes
+- `find(x)` tells you which group `x` belongs to
+- `union(a, b)` merges two groups
+- Used when the main question is "are these in the same component?"
+
+---
+
 ## 5. Tree vs Graph
 
 ```
