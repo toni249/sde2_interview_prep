@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Java build artifacts
+target/
+build/
+out/
+*.class
+
+# Obsidian — ignore local UI state, keep plugin configs portable
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/workspaces.json
+.obsidian/cache
+.obsidian/plugins/*/data.json.bak
+
+# Excalidraw — local autosaves / exports
+*.excalidraw.svg
+*.excalidraw.png

@@ -250,12 +250,12 @@ int change(int amount, int[] coins) {
 
 ### Unbounded Knapsack Questions
 
-| Problem | Variation | LC# |
-|---------|-----------|-----|
-| Coin Change (min coins) | Unbounded, minimize | 322 |
-| Coin Change II (count ways) | Unbounded, count | 518 |
-| Perfect Squares | Unbounded knapsack | 279 |
-| Integer Break | Unbounded, max product | 343 |
+| Problem                     | Variation              | LC# |
+| --------------------------- | ---------------------- | --- |
+| Coin Change (min coins)     | Unbounded, minimize    | 322 |
+| Coin Change II (count ways) | Unbounded, count       | 518 |
+| Perfect Squares             | Unbounded knapsack     | 279 |
+| Integer Break               | Unbounded, max product | 343 |
 
 ---
 
