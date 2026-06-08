@@ -38,7 +38,17 @@ pq.peek();     // view min/max without removing
 
 ## P1: Top K Elements
 
-### Variation 1: K Largest Elements (LC 215)
+### Variation 1: Kth Largest Element in Array (LC 215)
+
+**Problem:** Given an unsorted integer array `nums` and integer `k`, return the **kth largest** element (in sorted order, not the kth distinct element).
+
+**Approach (Min-Heap of size k):**
+- Greedy invariant: at any time, keep the **k largest values seen so far** in a **min-heap** of fixed size k. The root of that heap is automatically the kth largest.
+- Why min-heap (not max)? We want to discard the smallest of our "top k" cheaply — that's the root of a min-heap. A max-heap would force us to scan to find the smallest.
+- Steps: offer every element; if heap size exceeds k, poll (removes current smallest of the top group).
+- Edge cases: k == nums.length → return min of array; duplicates are fine (sorted order, not distinct).
+- Time **O(n log k)**, space **O(k)**. Alternative QuickSelect is **O(n)** average / **O(n²)** worst.
+
 ```java
 // Min-heap of size k — maintain only k largest
 int findKthLargest(int[] nums, int k) {
@@ -60,7 +70,16 @@ If we keep a min-heap of size k:
 - The minimum of those k elements = kth largest
 ```
 
-### Variation 2: K Most Frequent Elements (LC 347)
+### Variation 2: Top K Frequent Elements (LC 347)
+
+**Problem:** Given an integer array `nums` and integer `k`, return the **k most frequent** elements in any order.
+
+**Approach (HashMap + Min-Heap of size k):**
+- Two phases: (1) count frequencies in a `HashMap` — O(n). (2) Keep a min-heap of size k **ordered by frequency** so the root is the smallest of the "current top k" — easy to evict.
+- Greedy choice: each step, if a new element has higher frequency than the heap's min, the old min is no longer in the top k → evict it.
+- Edge cases: k == number of distinct elements; ties in frequency (any order acceptable).
+- Time **O(n log k)**, space **O(n)** for map + **O(k)** heap. Alternative **bucket sort** gives **O(n)**: `buckets[freq] = list of values` — walk from high freq down.
+
 ```java
 List<Integer> topKFrequent(int[] nums, int k) {
     Map<Integer, Integer> freq = new HashMap<>();
@@ -77,6 +96,14 @@ List<Integer> topKFrequent(int[] nums, int k) {
 ```
 
 ### Variation 3: K Closest Points to Origin (LC 973)
+
+**Problem:** Given an array of 2D points and integer `k`, return the `k` points closest to the origin (Euclidean distance, any order).
+
+**Approach (Max-Heap of size k):**
+- Mirror image of "k largest": for **k closest**, we keep a **max-heap** of size k ordered by squared distance. Root = current farthest of the closest k — easiest to evict.
+- Skip `sqrt` — squared distance preserves ordering and avoids floating-point.
+- Time **O(n log k)**, space **O(k)**. Alternative QuickSelect on distances → **O(n)** average.
+
 ```java
 int[][] kClosest(int[][] points, int k) {
     // Max-heap of size k (remove farthest when overflow)
@@ -90,7 +117,16 @@ int[][] kClosest(int[][] points, int k) {
 }
 ```
 
-### Variation 4: K Closest Numbers in Array (LC 658)
+### Variation 4: Find K Closest Elements (LC 658)
+
+**Problem:** Given a sorted integer array `arr`, integers `k` and `x`, return the **k closest integers to `x`** in the array, sorted ascending. Tie-break: prefer the smaller value.
+
+**Approach (Max-Heap by distance, with tie-break):**
+- Custom comparator: order by `|a-x|` descending, then by value descending. Root = the worst candidate among the current best k — easy to evict.
+- After collecting k, sort the heap contents ascending for output.
+- Edge case: x outside `arr` range — answer is a contiguous prefix/suffix.
+- Time **O(n log k)**, space **O(k)**. Optimal is **two-pointer / binary search** on the sorted array → **O(log n + k)**.
+
 ```java
 // Use custom comparator: sort by |x - mid|, then by value
 List<Integer> findClosestElements(int[] arr, int k, int x) {
@@ -105,6 +141,31 @@ List<Integer> findClosestElements(int[] arr, int k, int x) {
     List<Integer> result = new ArrayList<>(maxHeap);
     Collections.sort(result);
     return result;
+}
+```
+
+### Variation 5: Kth Largest Element in a Stream (LC 703)
+
+**Problem:** Design `KthLargest(k, initialNums)` and `add(val)` that returns the **kth largest** element after each addition (across all elements seen so far, including duplicates).
+
+**Approach (Min-heap of size k, persistent):**
+- Same idea as LC 215 but the heap **persists across add() calls**. The root is always the current kth largest.
+- On `add`: offer the new value; if heap grows past k, poll the smallest. The new root is the answer.
+- Time **O(log k)** per add, space **O(k)**.
+
+```java
+class KthLargest {
+    PriorityQueue<Integer> minHeap = new PriorityQueue<>();
+    int k;
+    KthLargest(int k, int[] nums) {
+        this.k = k;
+        for (int n : nums) add(n);
+    }
+    int add(int val) {
+        minHeap.offer(val);
+        if (minHeap.size() > k) minHeap.poll();
+        return minHeap.peek();
+    }
 }
 ```
 
@@ -143,6 +204,15 @@ int quickSelect(int[] nums, int left, int right, int target) {
 ## P2: Kth Smallest — Special Cases
 
 ### Kth Smallest in Sorted Matrix (LC 378)
+
+**Problem:** Given an `n x n` matrix where each row and each column is sorted ascending, return the **kth smallest** element (in sorted order across the whole matrix).
+
+**Approach (Min-Heap, multi-source frontier):**
+- The smallest unvisited element is always at the "frontier" — for each row, the leftmost unprocessed cell. Seed a min-heap with the first column.
+- Each poll yields the global minimum; push that cell's right neighbor (same row, next column) — preserves the invariant that the heap contains the row-frontier.
+- After k polls, the last value polled is the kth smallest.
+- Time **O(k log n)** (heap of size ≤ n). Alternative: **binary search on value space** → **O(n log(max-min))**, often faster when k is large.
+
 ```java
 // Min-heap starting from top-left
 int kthSmallest(int[][] matrix, int k) {
@@ -169,6 +239,15 @@ int kthSmallest(int[][] matrix, int k) {
 ## P3: Merge K Sorted
 
 ### Merge K Sorted Lists (LC 23)
+
+**Problem:** Given an array of `k` sorted linked lists, merge them into one sorted linked list and return its head.
+
+**Approach (Min-Heap of k frontiers):**
+- At any moment the global minimum of all remaining nodes is the head of one of the lists — so seed a min-heap with each list's head.
+- Greedy step: poll the heap to get the next smallest, append to the result, push that node's `.next` (if any). The heap always contains ≤ k nodes — one frontier per list.
+- Edge cases: some lists null; the entire array empty.
+- Time **O(N log k)** where N is total node count; space **O(k)** for the heap. Alternative: **divide & conquer** pairwise merge — same asymptotic time, lower constants, no heap.
+
 ```java
 // Already covered in Linked List — min-heap pulling from k lists simultaneously
 ListNode mergeKLists(ListNode[] lists) {
@@ -196,6 +275,16 @@ for (int i = 0; i < k; i++) {
 ```
 
 ### Smallest Range Covering Elements from K Lists (LC 632)
+
+**Problem:** Given `k` sorted integer lists, find the **smallest range `[a, b]`** that includes at least one number from each list. Tie-break: smaller `a` wins.
+
+**Approach (Min-Heap + running max):**
+- Maintain a sliding "selection" of exactly one element per list (a "frontier"). The range = `[heap.min, runningMax]`.
+- Each step, poll the min and advance **that list's** pointer by one (this is the only way to shrink the range, since any other move keeps the min unchanged but might increase max). Push the new value, update `runningMax`.
+- Stop when any list is exhausted — we can no longer cover all k.
+- Why min-heap (not max)? We must always know which element is the **current min** to advance the right list.
+- Time **O(N log k)** where N is total element count; space **O(k)**.
+
 ```java
 // Maintain a window [min, max] across k lists simultaneously
 // Advance the list with the minimum element to shrink the range
@@ -235,6 +324,17 @@ int[] smallestRange(List<List<Integer>> nums) {
 ## P4: Two Heaps — Median
 
 ### Median of Data Stream (LC 295) — FAANG Classic
+
+**Problem:** Design a data structure that supports two ops on a stream of integers: `addNum(x)` adds a number, `findMedian()` returns the current median (mean of two middles if even count).
+
+**Approach (Two Heaps — max-heap of lower half + min-heap of upper half):**
+- Key insight: median only requires knowing the **middle one or two values**, not the full sorted order. Split the stream into halves at the median:
+  - **`maxHeap`** stores the **lower half** — root = largest of lower half.
+  - **`minHeap`** stores the **upper half** — root = smallest of upper half.
+- Invariant: every element of `maxHeap` ≤ every element of `minHeap`; sizes differ by at most 1. Then median = either root, or average of both roots.
+- `addNum` trick to enforce ordering: push to `maxHeap`, then move its top to `minHeap` (ensures the order invariant); rebalance sizes if needed.
+- Time: **O(log n)** per add, **O(1)** per median. Space **O(n)**.
+
 ```java
 // Maintain two heaps:
 // maxHeap: lower half of numbers (max at top)
@@ -261,6 +361,17 @@ class MedianFinder {
 ```
 
 ### Sliding Window Median (LC 480)
+
+**Problem:** Given an array `nums` and window size `k`, return the median of each k-sized sliding window as it moves left to right.
+
+**Approach (Two TreeMaps OR two heaps with lazy deletion):**
+- Same two-half invariant as LC 295, but each window slide both **adds** and **removes** an arbitrary element — heaps don't support O(log n) arbitrary removal directly.
+- Two options:
+  - **Lazy deletion**: keep a "to-delete" hashmap; whenever a heap's root is marked-deleted, pop it. Amortized O(log k).
+  - **TreeMap** (used here): supports `firstKey()` (peek), and `remove()` of any key in O(log k). Track sizes separately because keys can have multiplicity.
+- Watch out for integer overflow when averaging two ints near `Integer.MAX_VALUE` — cast to `double` first.
+- Time **O(n log k)**, space **O(k)**.
+
 ```java
 // Two heaps + remove arbitrary elements (use lazy deletion or TreeMap)
 // TreeMap approach: maintain lo (max of lower half) and hi (min of upper half)
@@ -312,6 +423,16 @@ class SlidingWindowMedian {
 ## P5: Task Scheduling with Heaps
 
 ### Task Scheduler (LC 621)
+
+**Problem:** Given an array of CPU task labels (chars A–Z) and an integer `n`, the same task must be spaced **at least n units** apart. Return the **minimum total time** (including idle slots) to finish all tasks.
+
+**Approach (Greedy formula based on max frequency):**
+- The bottleneck is the **most frequent** task: if it appears `maxFreq` times, you must lay out `maxFreq - 1` "cycles" of `n + 1` slots (for cooldown) plus one final placement.
+- If multiple tasks tie at `maxFreq`, they all occupy the last partial cycle → add `maxCount` to the formula.
+- Final answer: `max(formula, tasks.length)` — if there are many low-frequency tasks, no idling is needed and time is just `tasks.length`.
+- A heap-based simulation also works (max-heap by frequency, process `n+1` at a time), but the closed-form is O(N + 26).
+- Time **O(N)**, space **O(1)**.
+
 ```java
 // Maximum frequency task determines the minimum idle slots needed
 int leastInterval(char[] tasks, int n) {
@@ -328,6 +449,15 @@ int leastInterval(char[] tasks, int n) {
 ```
 
 ### Reorganize String (LC 767)
+
+**Problem:** Given a string `s`, rearrange its characters so that **no two adjacent characters are the same**. Return any valid rearrangement, or `""` if impossible.
+
+**Approach (Max-Heap by frequency, alternate placement):**
+- Greedy: at each step, the safest character to place next is the **currently most frequent** one — but we can't place the *same* char twice in a row. So pull the **top two** from the max-heap, place both, decrement their counts, push back if > 0.
+- Why max-heap? Highest-frequency character is the constraint — if we delay it too long, we get stuck with consecutive duplicates at the end.
+- Impossibility check: if any char's frequency > `(n + 1) / 2`, no arrangement exists; this naturally surfaces when the heap has size 1 with count > 1 at the end.
+- Time **O(N log 26) = O(N)**, space **O(26)**.
+
 ```java
 // Greedily place most frequent char, alternate using max-heap
 String reorganizeString(String s) {

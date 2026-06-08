@@ -30,6 +30,16 @@ STACK & QUEUE
 ```
 
 ### Variation 1: Next Greater Element (LC 496)
+
+**Problem:** For each element in `nums`, find the **next greater element** to its right. If no such element exists, output -1. (LC 496 actually uses two arrays with `nums1 ⊆ nums2`; this is the canonical single-array version.)
+
+**Approach (Monotonic decreasing stack of indices):**
+- Iterate left to right, maintaining a stack of indices whose answer is **still unknown**.
+- For each `nums[i]`, while the stack top is smaller than `nums[i]`, we've found that top's answer → pop and assign.
+- Push `i`. At the end, indices remaining in the stack have no greater element → already -1 (from `Arrays.fill`).
+- Each index is pushed and popped at most once → O(n) total.
+- Time O(n), Space O(n).
+
 ```java
 int[] nextGreaterElement(int[] nums) {
     int n = nums.length;
@@ -50,6 +60,15 @@ int[] nextGreaterElement(int[] nums) {
 ```
 
 ### Variation 2: Next Greater Element II (Circular Array, LC 503)
+
+**Problem:** Same as LC 496 but the array is **circular** — wrapping past the end is allowed when searching for a greater element.
+
+**Approach (Two-pass trick on doubled index):**
+- Iterate `i` from `0` to `2n - 1` and use `idx = i % n` to access elements.
+- Only **push** in the first pass (`i < n`); the second pass just resolves indices left in the stack via wrap-around.
+- This avoids physically duplicating the array while still giving each index a "second chance" to find its next greater.
+- Time O(n), Space O(n).
+
 ```java
 // Process array twice to simulate circular behavior
 int[] nextGreaterElements(int[] nums) {
@@ -70,6 +89,14 @@ int[] nextGreaterElements(int[] nums) {
 ```
 
 ### Variation 3: Daily Temperatures (LC 739)
+
+**Problem:** Given an array of daily temperatures, return an array where `answer[i]` is the **number of days** you must wait after day `i` to get a warmer temperature. 0 if no such day.
+
+**Approach (Monotonic decreasing stack, store distance):**
+- Same as Next Greater Element, but when you pop index `j` because `temps[i] > temps[j]`, record `result[j] = i - j` (the **distance**, not the value).
+- Unpopped indices at the end keep their default 0.
+- Time O(n), Space O(n).
+
 ```java
 // "How many days until warmer temperature?" — next greater, store distance
 int[] dailyTemperatures(int[] temps) {
@@ -89,6 +116,16 @@ int[] dailyTemperatures(int[] temps) {
 ```
 
 ### Variation 4: Stock Span Problem
+
+**Problem:** For each day, return the **span** = number of consecutive days (ending at and including today) whose price is ≤ today's price.
+
+**Approach (Monotonic decreasing stack of indices):**
+- We want, for each `i`, the index of the **previous greater** price. Span = `i - prevGreaterIndex` (or `i + 1` if none).
+- Maintain a stack of indices with strictly decreasing prices. Pop while `prices[stack.top] <= prices[i]`. After popping, the stack top is the previous greater.
+- Span is the distance between current index and that top.
+- Each index pushed/popped at most once → amortized O(1) per query, O(n) total.
+- Time O(n), Space O(n).
+
 ```java
 // How many consecutive days ≤ today's price (including today)?
 int[] stockSpan(int[] prices) {
@@ -108,6 +145,17 @@ int[] stockSpan(int[] prices) {
 ```
 
 ### Variation 5: Largest Rectangle in Histogram (LC 84) — FAANG Classic
+
+**Problem:** Given non-negative bar heights of width 1, return the area of the largest axis-aligned rectangle contained in the histogram.
+
+**Approach (Monotonic increasing stack of indices):**
+- Key insight: the largest rectangle's height equals **some single bar `h[j]`**, and its width spans from the **previous smaller** bar to the **next smaller** bar (both exclusive).
+- Maintain a stack of indices with strictly increasing heights. When we see `h[i] < h[stack.top]`, the bar at `stack.top` has just found its next smaller (= `i`) and its previous smaller (= the new stack top after popping).
+- Pop and compute area = `h[popped] * (i - newTop - 1)`. If stack is empty, width is `i` (extends to the start).
+- Append a sentinel 0 at the end (`i == n`) to flush any remaining bars.
+- Edge case: all equal heights — only flushed by sentinel.
+- Time O(n), Space O(n).
+
 ```java
 // For each bar: find left and right boundaries where it is the smallest
 int largestRectangleArea(int[] heights) {
@@ -131,6 +179,19 @@ int largestRectangleArea(int[] heights) {
 > **Intuition:** When we pop bar at index `j`, it means `heights[i]` is the first bar to its right that is smaller. The last element in the stack is the first bar to its left that is smaller. So the width is exactly `right - left - 1`.
 
 ### Variation 6: Trapping Rain Water — Stack Approach (LC 42)
+
+**Problem:** Given an elevation map (array of non-negative ints), compute how many units of water it can trap after raining.
+
+**Approach (Monotonic decreasing stack — fills layer by layer):**
+- Maintain a stack of indices with decreasing heights (potential left walls).
+- When `height[i] > height[stack.top]`, we've found a right wall. Pop the bottom (`bottom`), and if stack still has a left wall:
+  - width = `i - left - 1`
+  - bounded height = `min(height[left], height[i]) - height[bottom]`
+  - Add `width * bounded_height` to water.
+- This fills the water **horizontally**, one layer at a time, between left and right walls.
+- Edge case: monotonic ascending/descending arrays trap nothing.
+- Time O(n), Space O(n). Alternative: two-pointer O(n) time, O(1) space.
+
 ```java
 // Think of it as filling containers between walls
 int trap(int[] height) {
@@ -153,6 +214,16 @@ int trap(int[] height) {
 ```
 
 ### Variation 7: Sum of Subarray Minimums (LC 907)
+
+**Problem:** Given an array `arr`, return the sum of `min(b)` over **every contiguous subarray** `b`. Return mod 1e9+7.
+
+**Approach (Contribution counting via monotonic stacks):**
+- Instead of enumerating O(n²) subarrays, count for each element `arr[i]` how many subarrays have `arr[i]` as the **min**, then sum `arr[i] * count`.
+- For `arr[i]`, let `left[i]` = distance to the previous strictly smaller element (or to start if none), `right[i]` = distance to the next smaller-or-equal element. Count = `left[i] * right[i]`.
+- Use **strict on one side** and **non-strict on the other** to break ties (avoids double-counting when duplicates exist).
+- Compute both arrays via monotonic stacks in O(n) each.
+- Time O(n), Space O(n).
+
 ```java
 // For each element, find how many subarrays it is the minimum of
 // Answer = sum of (element × count_of_subarrays_where_it_is_min)
@@ -206,6 +277,24 @@ int sumSubarrayMins(int[] arr) {
 
 ### Variation 1: Valid Parentheses Variants
 
+**Problem (LC 20):** Given a string containing only `()[]{}`, determine if every opening bracket is properly closed by a matching bracket in the correct order.
+
+**Approach (Stack of expected closers / openers):**
+- Push every opening bracket onto a stack.
+- On a closing bracket, the top of stack must be the matching opener — pop and compare; else invalid.
+- At end, stack must be empty (no unmatched openers).
+- Edge cases: empty string is valid; odd-length string is always invalid (early-exit optimization).
+- Time O(n), Space O(n).
+
+**Problem (LC 921 — Minimum Add to Make Valid):** Return the minimum number of brackets you must insert anywhere in the string to make it valid.
+
+**Approach (Two counters — no stack needed):**
+- `open` = unmatched `(` so far; `close` = unmatched `)` so far.
+- On `(`: `open++`. On `)`: if `open > 0` match it (`open--`), else it's unmatched → `close++`.
+- Answer = `open + close` (each unmatched needs its partner inserted).
+- Equivalent to running the stack but only tracking sizes — O(1) extra space.
+- Time O(n), Space O(1).
+
 ```java
 // Check if balanced — core template
 boolean isValid(String s) {
@@ -241,6 +330,20 @@ int minAddToMakeValid(String s) {
 ```
 
 ### Variation 2: Asteroid Collision (LC 735)
+
+**Problem:** Each asteroid moves right (positive) or left (negative) at the same speed. When two collide, the smaller explodes; equal-size both explode; same direction never collide. Return the state after all collisions.
+
+**Approach (Stack simulation):**
+- The only collisions happen when a **negative** (moving left) asteroid meets the top of the stack which is **positive** (moving right).
+- For each incoming asteroid `a`:
+  - While `a < 0` and `stack.peek() > 0`: compare magnitudes.
+    - `|top| < |a|` → top explodes, keep looping with `a` alive.
+    - `|top| == |a|` → both explode, `a` dies.
+    - `|top| > |a|` → `a` dies.
+  - If `a` survives, push it.
+- Stack invariant: any negatives on the stack are at the **bottom** (they never collide with subsequent negatives).
+- Time O(n), Space O(n).
+
 ```java
 int[] asteroidCollision(int[] asteroids) {
     Deque<Integer> stack = new ArrayDeque<>();
@@ -261,6 +364,18 @@ int[] asteroidCollision(int[] asteroids) {
 
 ### Variation 3: Remove Duplicate Letters (LC 316) — Greedy + Stack
 > Remove duplicates so result is lexicographically smallest.
+
+**Problem:** Given a string `s`, remove duplicate letters so that every letter appears exactly once and the resulting string is **lexicographically smallest** among all such results, preserving relative order.
+
+**Approach (Greedy with monotonic stack + frequency / in-stack flags):**
+- Precompute `freq[c]` for each character.
+- Walk the string; decrement `freq[c]` as we pass each `c`.
+- If `c` is already in the stack, skip (we keep the leftmost good occurrence).
+- Else, while `stack.top > c` AND `freq[stack.top] > 0` (we'll see another occurrence later), pop the top — a smaller char in front is better since we'll get another chance to place the popped letter.
+- Push `c`, mark it in-stack.
+- Why correct: the popped char will be re-added later (its freq > 0), and replacing it with a smaller letter at this position lex-decreases the result.
+- Time O(n) (each char pushed/popped at most once), Space O(26).
+
 ```java
 String removeDuplicateLetters(String s) {
     int[] freq = new int[26];
@@ -305,6 +420,21 @@ String removeDuplicateLetters(String s) {
 > Use a deque (double-ended queue) to maintain the maximum of the current window.
 > Front = max, back = candidates. Remove from front when out of window, from back when smaller than incoming.
 
+### Variation 1: Sliding Window Maximum (LC 239)
+
+**Problem:** Given an array `nums` and a window size `k`, return an array where each element is the maximum of the corresponding sliding window of size `k`.
+
+**Approach (Monotonic decreasing deque of indices):**
+- Maintain a deque of indices such that the corresponding values are **strictly decreasing** front-to-back. Front is always the max of the current window.
+- For each `i`:
+  1. Pop from **front** while the front index is out of window (`< i - k + 1`).
+  2. Pop from **back** while `nums[back] < nums[i]` — those candidates are smaller AND older than `i`, so they can never be max again while `i` is alive.
+  3. Add `i` to the back.
+  4. Once `i >= k - 1`, record `nums[deque.peekFirst()]` as the window max.
+- Each index is added and removed at most once → **amortized O(1)** per window, O(n) total.
+- Alternative: max-heap O(n log k) with lazy deletion.
+- Time O(n), Space O(k).
+
 ```java
 // LC 239: Sliding Window Maximum
 int[] maxSlidingWindow(int[] nums, int k) {
@@ -328,7 +458,18 @@ int[] maxSlidingWindow(int[] nums, int k) {
 }
 ```
 
-### Variation: Jump Game VI (LC 1696) — DP + Deque
+### Variation 2: Jump Game VI (LC 1696) — DP + Deque
+
+**Problem:** Starting at index 0, at each step you can jump up to `k` indices forward. The score of a path is the sum of `nums` at visited indices. Return the **maximum** score to reach the last index.
+
+**Approach (DP with sliding-window max via deque):**
+- Let `dp[i]` = max score to reach index `i`. Recurrence: `dp[i] = nums[i] + max(dp[i-k], ..., dp[i-1])`.
+- Naively this is O(nk). Optimize the "max over last k" using a monotonic decreasing deque, exactly like LC 239 — but on `dp` values.
+- Same deque ops: pop front if out of window, pop back if `dp[back] <= dp[i]`, push `i`.
+- Final answer is `dp[n - 1]`.
+- Edge case: `k >= n` reduces to picking all (max score = sum of positives + nums[0] forced).
+- Time O(n), Space O(n).
+
 ```java
 // dp[i] = max score to reach index i
 // dp[i] = nums[i] + max(dp[i-k], ..., dp[i-1])
@@ -355,6 +496,18 @@ int maxResult(int[] nums, int k) {
 ## P4: Design Problems
 
 ### Min Stack (LC 155)
+
+**Problem:** Design a stack with `push`, `pop`, `top`, and `getMin` — **all in O(1)** time.
+
+**Approach (Auxiliary "min so far" stack):**
+- Use a second stack `minStack` that stores the **min of all values up to that depth**.
+- On `push(v)`: push `v` to the main stack; push `min(v, minStack.top)` to `minStack` (or just `v` if empty).
+- On `pop`: pop both stacks in tandem so heights stay synced.
+- `top()` reads main top; `getMin()` reads `minStack` top.
+- Invariant: `minStack` has the same height as the main stack, with the running min at each level.
+- Space optimization: only push to `minStack` when value `<= currentMin`, and on pop check if popped value equals min. Saves space for non-decreasing input.
+- Time O(1) all ops, Space O(n).
+
 ```java
 // Key: maintain a second stack tracking the minimum at each level
 class MinStack {
@@ -374,6 +527,16 @@ class MinStack {
 ```
 
 ### Queue using Two Stacks (LC 232)
+
+**Problem:** Implement FIFO queue (`push`, `pop`, `peek`, `empty`) using only two LIFO stacks. Operations should be **amortized O(1)**.
+
+**Approach (Push-stack + Pop-stack):**
+- `inStack` accepts all pushes. `outStack` serves pops/peeks.
+- When `outStack` is empty and a pop/peek is needed, drain all of `inStack` into `outStack` — this reverses the order, so the bottom of `inStack` (oldest element) is now on top of `outStack`.
+- Each element is pushed/popped at most twice across its lifetime → amortized O(1).
+- Worst-case single op is O(n) (when transfer happens).
+- Time amortized O(1), Space O(n).
+
 ```java
 // Amortized O(1) per operation
 class MyQueue {
@@ -400,6 +563,15 @@ class MyQueue {
 ```
 
 ### Stack using Two Queues (LC 225)
+
+**Problem:** Implement LIFO stack (`push`, `pop`, `top`, `empty`) using only FIFO queues.
+
+**Approach (Push is heavy — single-queue rotation):**
+- On `push(x)`: offer `x` to `q2`, drain all of `q1` into `q2`, swap `q1`/`q2`. Now `q1.front` = latest pushed = "top of stack".
+- `pop` and `top` are O(1) reads of `q1.front`.
+- Alternative one-queue variant: push `x` then rotate the queue by `size - 1` positions; same complexity, no second queue needed.
+- Time: push O(n), pop/top O(1). Space O(n).
+
 ```java
 class MyStack {
     Queue<Integer> q1 = new LinkedList<>(), q2 = new LinkedList<>();

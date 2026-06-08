@@ -54,11 +54,16 @@ int rangeSum(int L, int R) {
 }
 ```
 
-### The HashMap Trick (★ Very Common)
-> "Count subarrays with sum = k"
+### The HashMap Trick (★ Very Common) — Subarray Sum Equals K (LC 560)
 
-Key insight: if `prefix[j] - prefix[i] = k`, then subarray `[i+1..j]` has sum k.
-So we need `prefix[i] = prefix[j] - k`. Count how many such `prefix[i]` exist using a map.
+**Problem:** Given an integer array `nums` (can have negatives) and integer `k`, return the **total count** of contiguous subarrays whose sum equals `k`.
+
+**Approach (Prefix Sum + HashMap):**
+- Naive O(n²) checks every subarray. Smart move: walk left→right computing `running = prefix[j]`. Any subarray ending at `j` with sum `k` corresponds to an earlier `prefix[i] = running - k`.
+- Store frequencies of prefix sums seen so far in a HashMap; at each step, add `freq[running - k]` to the answer.
+- Seed with `freq[0] = 1` so subarrays starting at index 0 are counted (empty prefix before the array).
+- Works with negatives — sliding window would not.
+- Time O(n), Space O(n).
 
 ```java
 // Count subarrays with sum = k
@@ -81,10 +86,15 @@ This is what allows subarrays that begin at index `0` to be counted correctly.
 
 ### Example: Longest Subarray with Sum K
 
-Use prefix sum + hashmap when the array can contain **negative numbers**.
+**Problem:** Given an array `A` (which may contain negative numbers) and integer `k`, return the **length** of the longest contiguous subarray whose sum equals `k`. Return 0 if none exists.
 
-Key idea: if current prefix is `running`, we need an earlier prefix `running - k`.
-To maximize length, store the **first index** where each prefix sum appeared.
+**Approach (Prefix Sum + HashMap, store earliest index):**
+- Same observation as LC 560: subarray `(i, j]` sums to `k` iff `prefix[j] - prefix[i] = k`.
+- To **maximize length**, we want the earliest `i` for each prefix value — use `putIfAbsent` so the map never overwrites a smaller index.
+- For each `j`, look up `running - k`; if present, candidate length = `j - firstIndex[running - k]`.
+- Seed `firstIndex.put(0, -1)` so subarrays starting at index 0 are length `j - (-1) = j + 1`.
+- If the array is **all positive**, sliding window is simpler and uses O(1) extra space; use this hashmap approach when negatives are possible.
+- Time O(n), Space O(n).
 
 ```java
 int longestSubarrayWithSumK(int[] A, int k) {
@@ -196,7 +206,18 @@ for (int fast = 1; fast < n; fast++) {
 // slow+1 is the new length
 ```
 
-#### Flavor C: Dutch National Flag (3-way partition)
+#### Flavor C: Dutch National Flag (3-way partition) — Sort Colors (LC 75)
+
+**Problem:** Array contains only values 0, 1, 2 (representing red/white/blue). Sort it **in-place in one pass** using O(1) extra space — no library sort, no counting then rewriting.
+
+**Approach (3-way partition / Dutch National Flag):**
+- Maintain three regions via three pointers: `[0..lo-1]` = 0s, `[lo..mid-1]` = 1s, `[hi+1..n-1]` = 2s. The unknown region is `[mid..hi]`.
+- Inspect `A[mid]`:
+  - `0` → swap into the 0s region: `swap(lo, mid)`, advance both.
+  - `1` → already in place, just advance `mid`.
+  - `2` → swap to the back: `swap(mid, hi--)` — do **not** advance `mid` because the swapped-in element is still unknown.
+- Loop while `mid <= hi`. Single pass, O(n) time, O(1) space.
+
 ```java
 // Sort 0s, 1s, 2s
 int lo = 0, mid = 0, hi = n - 1;
@@ -209,7 +230,17 @@ while (mid <= hi) {
 
 ### Key Variations
 
-**Three Sum** = sort + fix one element + two pointers on the rest
+**Three Sum (LC 15)**
+
+**Problem:** Given an integer array `nums`, return **all unique triplets** `[a, b, c]` such that `a + b + c == 0`. The result must not contain duplicate triplets.
+
+**Approach (Sort + fix one + two pointers):**
+- Sort the array — this both enables two-pointer search and makes duplicate skipping easy (equal values are adjacent).
+- Fix `A[i]` as the smallest of the triplet; for each `i`, two-pointer search the remaining suffix for a pair summing to `-A[i]`.
+- Skip duplicates on `i`, `left`, and `right` after finding/moving to avoid duplicate triplets.
+- Early break when `A[i] > 0` (sum can never be 0 anymore).
+- Time O(n²), Space O(1) extra (output excluded).
+
 ```java
 Arrays.sort(A);
 for (int i = 0; i < n - 2; i++) {
@@ -224,7 +255,16 @@ for (int i = 0; i < n - 2; i++) {
 }
 ```
 
-**Trapping Rain Water** = two pointers with left/right max tracking
+**Trapping Rain Water (LC 42)**
+
+**Problem:** Given non-negative integers representing an elevation map (bar heights of width 1), compute how much rain water can be trapped between the bars after raining.
+
+**Approach (Two Pointers with running max):**
+- Water above index `i` = `min(maxLeft[i], maxRight[i]) - height[i]`. A prefix-max + suffix-max approach uses O(n) space.
+- Two-pointer optimization: at each step, the side with the **smaller** current bar is the bottleneck — water trapped there is fully determined by that side's running max (the other side is guaranteed taller).
+- Move the smaller side inward, updating its running max and accumulating `runningMax - currentHeight`.
+- Time O(n), Space O(1). Compare with the monotonic stack approach (P9) which also runs O(n) but uses O(n) stack space.
+
 ```java
 int left = 0, right = n - 1;
 int leftMax = 0, rightMax = 0, water = 0;
@@ -349,7 +389,16 @@ This pattern is used in problems like:
 - `Subarrays with K Different Integers`
 - `Fruit Into Baskets`
 
-**Minimum Window Substring** (Classic Hard)
+**Minimum Window Substring (LC 76)** — Classic Hard
+
+**Problem:** Given strings `s` and `t`, return the **shortest substring** of `s` that contains every character of `t` (counting multiplicity). Return `""` if no such substring exists.
+
+**Approach (Variable Sliding Window + frequency maps):**
+- Build `need[c]` = required count of each character from `t`. Maintain a `have` count of "characters currently satisfied" — increment only when a character's window count reaches its `need`.
+- Expand `right`, adding chars to the window. Once `have == required distinct chars`, the window is **valid**.
+- While valid, try to shrink `left`: record `(right - left + 1)` if smaller than best, then drop `s[left]`. If dropping breaks a `need`, decrement `have` and stop shrinking.
+- Each character is visited at most twice (once when expanding, once when shrinking) → O(|s| + |t|) time, O(|s| + |t|) space.
+
 ```java
 // Two frequency maps: need[] and have[]
 // Shrink from left once window is valid
@@ -400,7 +449,17 @@ This is different from the "sum" window:
 
 ## P5: Kadane's Algorithm
 
-### The Core Idea
+### The Core Idea — Maximum Subarray (LC 53)
+
+**Problem:** Given an integer array `nums` (may contain negatives), find the contiguous subarray with the **largest sum** and return that sum.
+
+**Approach (Kadane's DP):**
+- Define `maxEndingHere[i]` = max sum of any subarray ending **exactly** at index `i`.
+- Recurrence: `maxEndingHere[i] = max(A[i], maxEndingHere[i-1] + A[i])`. Either start fresh at `i`, or extend the previous best.
+- The answer is `max` over all `maxEndingHere[i]`.
+- Intuition: if accumulated sum so far is negative, it can only hurt — discard and restart.
+- Time O(n), Space O(1) (one variable suffices; the DP collapses).
+
 > At each index, decide: "Do I extend the previous subarray, or start fresh?"
 
 ```java
@@ -452,7 +511,17 @@ for (int i = 1; i < n; i++) {
 }
 ```
 
-**Maximum Product Subarray:**
+**Maximum Product Subarray (LC 152):**
+
+**Problem:** Given an integer array `nums`, find the contiguous subarray with the **largest product** and return that product.
+
+**Approach (Kadane variant — track max AND min):**
+- Sum is monotonic under addition, but product is not: a large negative × another negative can flip to the new maximum. So we cannot just track the running max.
+- Track both `maxProd` and `minProd` ending at the current index. When `A[i] < 0`, swap them — the previous max times a negative is the new candidate for min, and vice versa.
+- At each step: `maxProd = max(A[i], maxProd * A[i])`, `minProd = min(A[i], minProd * A[i])`. Update global answer with `maxProd`.
+- Edge cases: zeros reset both to `A[i]`; single-element arrays return `A[0]`.
+- Time O(n), Space O(1).
+
 > Key insight: track both max and min (because negative × negative = positive)
 ```java
 int maxProd = A[0], minProd = A[0], result = A[0];
@@ -464,7 +533,17 @@ for (int i = 1; i < n; i++) {
 }
 ```
 
-**Maximum Circular Subarray Sum:**
+**Maximum Circular Subarray Sum (LC 918):**
+
+**Problem:** Given a **circular** integer array `nums` (the end wraps to the beginning), find the maximum possible sum of a non-empty contiguous subarray. A subarray may wrap around.
+
+**Approach (Two-case Kadane):**
+- Case A — best subarray does **not** wrap: standard Kadane on `nums`.
+- Case B — best subarray **wraps**: the unused middle part is then a contiguous non-wrapping subarray with the **minimum** sum. So `bestWrap = totalSum - minSubarraySum`.
+- Answer = `max(caseA, caseB)`. Equivalent trick: `min` Kadane = `-Kadane(negated array)`.
+- Edge case: if all numbers are negative, `minSubarraySum == totalSum`, making `caseB = 0` (empty subarray), which is invalid → return `caseA`.
+- Time O(n), Space O(1).
+
 ```
 Answer = max(
     normal Kadane's,                         // non-wrapping
@@ -516,7 +595,17 @@ return left;
 
 **isFeasible(mid)** = "can we achieve this answer with mid as the constraint?"
 
-### Rotated Sorted Array
+### Rotated Sorted Array — Search in Rotated Sorted Array (LC 33)
+
+**Problem:** A sorted ascending array of **distinct** values has been rotated at an unknown pivot (e.g., `[4,5,6,7,0,1,2]`). Given a target, return its index, or `-1` if absent. Must run in O(log n).
+
+**Approach (Modified Binary Search):**
+- Key invariant: at any `mid`, **at least one of the two halves** `[left..mid]` and `[mid..right]` is fully sorted (no pivot inside it). Check which.
+- If `A[left] <= A[mid]`, the left half is sorted. Check if `target` is in `[A[left], A[mid])` — if yes, go left; else go right.
+- Otherwise the right half is sorted. Check if `target` is in `(A[mid], A[right]]` — if yes, go right; else go left.
+- This narrows by half each step → O(log n) time, O(1) space.
+- Caveat (LC 81 variant): with duplicates, `A[left] == A[mid] == A[right]` makes the sorted-half test ambiguous; in that case advance `left++` / `right--` and continue → worst-case O(n).
+
 ```java
 // Search in rotated sorted array
 // Key: one half is always sorted
@@ -566,7 +655,18 @@ while (left <= right) {
 - "Minimum platforms"
 - Sort + scan
 
-### Merge Intervals Template
+### Merge Intervals Template — Merge Intervals (LC 56)
+
+**Problem:** Given an array of intervals `[[start, end], ...]`, merge all overlapping intervals and return the resulting list (intervals are considered overlapping if they share at least one point).
+
+**Approach (Sort by start + linear sweep):**
+- Sort intervals by start time. After sorting, any interval that overlaps the current "open" interval must come right after it (no later interval has an earlier start).
+- Maintain the last merged interval in the result. For the next interval `cur`:
+  - If `cur.start <= last.end` → overlap; extend `last.end = max(last.end, cur.end)`.
+  - Else → no overlap; push `cur` as a new entry.
+- One pass after sort. Time O(n log n) for sort, O(n) sweep. Space O(n) for output.
+- Variants: LC 57 (Insert Interval), LC 435 (Non-overlapping — sort by `end` and greedy).
+
 ```java
 Arrays.sort(intervals, (a, b) -> a[0] - b[0]);
 List<int[]> result = new ArrayList<>();
@@ -606,6 +706,16 @@ for (int i = 1; i < intervals.length; i++) {
 3. **First missing positive** → mark visited in-place or use set
 4. **Two sum** → store complements in map
 
+**Two Sum (LC 1)**
+
+**Problem:** Given an integer array `nums` and an integer `target`, return the **indices** of the two numbers that add to `target`. Exactly one solution exists; you may not use the same element twice.
+
+**Approach (HashMap of complements, one pass):**
+- For each `A[i]`, the complement needed is `target - A[i]`. If we've already seen the complement, we have our pair.
+- Walk the array once; before inserting `A[i]` into the map, check if `target - A[i]` is already a key.
+- Insert **after** checking so the same index isn't reused.
+- Time O(n), Space O(n). Compare: sort + two-pointer is O(n log n) and loses original indices.
+
 ```java
 // Two Sum
 Map<Integer, Integer> map = new HashMap<>();
@@ -615,7 +725,17 @@ for (int i = 0; i < n; i++) {
 }
 ```
 
-### First Missing Positive (No extra space)
+### First Missing Positive — LC 41 (No extra space)
+
+**Problem:** Given an unsorted integer array `nums`, return the **smallest positive integer** missing from it. Must run in O(n) time and use O(1) extra space.
+
+**Approach (Cyclic sort / in-place hashing):**
+- Observation: the answer must lie in `[1, n+1]` where `n = nums.length`. Any value `≤ 0` or `> n` is irrelevant.
+- Use the array itself as a hash: place value `x` at index `x - 1` (so `A[i] == i + 1` becomes the "in place" condition).
+- For each index, while `A[i]` is in `[1, n]` and `A[A[i]-1] != A[i]` (avoid infinite loop on duplicates), swap `A[i]` into its correct slot.
+- Second pass: the first index where `A[i] != i + 1` gives answer `i + 1`. If all match, answer is `n + 1`.
+- Time O(n) amortized — each swap places one value permanently. Space O(1).
+
 ```java
 // Use array itself as a hash map
 // Place each number x at index x-1
@@ -652,7 +772,17 @@ return n + 1;
 > Maintain a stack that is always **increasing** or **decreasing**.
 > This gives O(n) solution to "next greater/smaller element" problems.
 
-### Next Greater Element Template
+### Next Greater Element Template (LC 496 / 503 / 739)
+
+**Problem:** For each index `i`, find the value of the **next** element to its right that is strictly greater than `A[i]`. If none exists, output `-1` for that index.
+
+**Approach (Monotonic Decreasing Stack):**
+- Maintain a stack of **indices** whose values are in decreasing order from bottom to top (i.e., waiting for their "next greater").
+- When processing `A[i]`, pop every index whose value is `< A[i]` — `A[i]` is their answer.
+- Push `i`. Indices left in the stack at the end have no next greater → keep their default `-1`.
+- Each index is pushed and popped at most once → O(n) amortized. Space O(n).
+- Variants: LC 503 (circular array) — iterate `2n` times with `i % n`. LC 739 (Daily Temperatures) — same template but store the **distance** `i - stack.pop()`.
+
 ```java
 int[] result = new int[n];
 Arrays.fill(result, -1);
@@ -667,7 +797,17 @@ for (int i = 0; i < n; i++) {
 }
 ```
 
-### Largest Rectangle in Histogram
+### Largest Rectangle in Histogram (LC 84)
+
+**Problem:** Given non-negative integers representing the heights of histogram bars (each width 1), return the area of the **largest rectangle** that fits entirely within the histogram.
+
+**Approach (Monotonic Increasing Stack):**
+- For each bar `h`, the largest rectangle with `h` as its **minimum height** spans from "previous smaller bar + 1" on the left to "next smaller bar - 1" on the right. Compute these boundaries with one stack pass.
+- Keep a stack of indices in increasing height order. When the new bar's height is smaller than `heights[stack.peek()]`, pop and finalize the popped bar's rectangle: `height = heights[popped]`, `width = i - stack.peek() - 1` (or `i` if stack is empty).
+- Sentinel trick: append a virtual `height = 0` at the end (`i == n`) so all remaining bars get flushed cleanly.
+- Each bar pushed/popped once → O(n) time, O(n) space.
+- This is the key building block for LC 85 (Maximal Rectangle in a binary matrix): run this row-by-row on accumulated histogram heights.
+
 ```java
 // Classic hard problem — uses monotonic stack
 // Stack stores indices of bars in increasing height order
@@ -703,7 +843,19 @@ for (int i = 0; i <= n; i++) {
 
 ### Common Tricks
 
-**Spiral Order:**
+**Spiral Order — Spiral Matrix (LC 54):**
+
+**Problem:** Given an `m × n` matrix, return all elements in **spiral order**: traverse the outermost ring clockwise (right, down, left, up), then move inward and repeat.
+
+**Approach (Four shrinking boundaries):**
+- Maintain `top`, `bottom`, `left`, `right` boundaries. In each loop iteration, walk one full ring:
+  1. Left → right along `top`, then `top++`.
+  2. Top → bottom along `right`, then `right--`.
+  3. Right → left along `bottom` (only if `top <= bottom`), then `bottom--`.
+  4. Bottom → top along `left` (only if `left <= right`), then `left++`.
+- The two guard conditions handle non-square matrices (single remaining row or column) without revisiting cells.
+- Time O(m·n), Space O(1) extra (excluding output).
+
 ```java
 int top=0, bottom=m-1, left=0, right=n-1;
 while (top<=bottom && left<=right) {
@@ -714,13 +866,34 @@ while (top<=bottom && left<=right) {
 }
 ```
 
-**Rotate 90° Clockwise:**
+**Rotate 90° Clockwise — Rotate Image (LC 48):**
+
+**Problem:** Given an `n × n` 2D matrix representing an image, rotate it 90 degrees clockwise **in-place** (no extra matrix).
+
+**Approach (Transpose + reverse rows):**
+- Observation: rotating 90° clockwise = transpose (reflect along main diagonal) + reverse each row.
+- Step 1: For `i < j`, swap `matrix[i][j]` with `matrix[j][i]`. After this, columns become rows (but mirrored).
+- Step 2: Reverse each row to fix the mirroring.
+- Counter-clockwise rotation = transpose + reverse each **column** (or reverse rows then transpose).
+- Time O(n²), Space O(1).
+
 ```
 Step 1: Transpose (swap matrix[i][j] with matrix[j][i])
 Step 2: Reverse each row
 ```
 
-**Set Matrix Zeros:**
+**Set Matrix Zeros — Set Matrix Zeroes (LC 73):**
+
+**Problem:** Given an `m × n` matrix, if a cell is `0`, set its **entire row and column** to `0`. Do it **in-place** with O(1) extra space (the obvious O(m+n) auxiliary arrays are not allowed for the optimal solution).
+
+**Approach (First row / first column as in-place markers):**
+- Use the matrix's first row and first column themselves to record which rows/cols need zeroing — saves the auxiliary arrays.
+- Pre-pass: separately record whether the first row and first column originally contain a zero (two booleans), because they'll be overwritten as markers.
+- Scan the interior `(i, j)` with `i >= 1, j >= 1`: if `matrix[i][j] == 0`, set `matrix[i][0] = 0` and `matrix[0][j] = 0`.
+- Second pass on interior: if `matrix[i][0] == 0` or `matrix[0][j] == 0`, set `matrix[i][j] = 0`.
+- Finally, zero out the first row / first column based on the two saved booleans.
+- Time O(m·n), Space O(1).
+
 ```
 Step 1: Use first row and first column as markers
 Step 2: Process inner matrix, then boundaries
