@@ -23,7 +23,7 @@ loop every 5s:
 - Simple, stateless, cache-friendly.
 - **Bad when** updates are rare (mostly empty responses) or need sub-second latency.
 
-![[f1.excalidraw.png]]
+![](f1.excalidraw.png)
 
 ### 2. Long Polling
 Client sends `GET /messages/wait`, server holds it until data arrives (or 30s timeout), returns, client reconnects immediately
