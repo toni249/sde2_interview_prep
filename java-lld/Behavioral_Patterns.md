@@ -80,37 +80,62 @@ public class DataProcessor {
     private boolean needsStableSort() { return false; }
 }
 
-// ─── Payment Strategy example (fintech classic) ───
-public interface PaymentStrategy {
-    boolean pay(double amount);
-    String getMethodName();
+// Example 2 : Payment Class 
+
+interface PaymentStrategy {
+  boolean pay(double amount);
 }
 
-public class UPIPayment implements PaymentStrategy {
-    private final String upiId;
-    public UPIPayment(String upiId) { this.upiId = upiId; }
+class CreditCardPayment implements PaymentStrategy {
+  private String cardNumber;
 
-    @Override
-    public boolean pay(double amount) {
-        System.out.println("Paying ₹" + amount + " via UPI: " + upiId);
-        return true;
-    }
+  public CreditCardPayment(String cardNumber) {
+    this.cardNumber = cardNumber;
+  }
 
-    @Override public String getMethodName() { return "UPI"; }
+  public boolean pay(double amount) {
+    // Credit card processing logic
+    System.out.println("Paid " + amount + " with credit card");
+    return true;
+  }
 }
 
-public class CardPayment implements PaymentStrategy {
-    private final String cardNumber;
-    public CardPayment(String cardNumber) { this.cardNumber = cardNumber; }
+class PayPalPayment implements PaymentStrategy {
+  private String email;
 
-    @Override
-    public boolean pay(double amount) {
-        System.out.println("Paying ₹" + amount + " via Card: ***" + cardNumber.substring(12));
-        return true;
-    }
+  public PayPalPayment(String email) {
+    this.email = email;
+  }
 
-    @Override public String getMethodName() { return "CARD"; }
+  public boolean pay(double amount) {
+    // PayPal processing logic
+    System.out.println("Paid " + amount + " with PayPal");
+    return true;
+  }
 }
+
+class ShoppingCart {
+  private PaymentStrategy paymentStrategy;
+
+  public void setPaymentStrategy(PaymentStrategy strategy) {
+    this.paymentStrategy = strategy;
+  }
+
+  public void checkout(double amount) {
+    paymentStrategy.pay(amount);
+  }
+}
+
+// Usage
+ShoppingCart cart = new ShoppingCart();
+
+cart.setPaymentStrategy(new CreditCardPayment("1234-5678"));
+cart.checkout(100.00);
+
+cart.setPaymentStrategy(new PayPalPayment("user@example.com"));
+cart.checkout(50.00);
+
+
 ```
 
 ---
